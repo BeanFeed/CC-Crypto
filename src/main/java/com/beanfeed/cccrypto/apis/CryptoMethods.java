@@ -4,6 +4,8 @@ import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -69,6 +71,62 @@ public class CryptoMethods {
         } catch (Exception e) {
             throw new LuaException("Failed to sha256: " + e.getMessage());
         }
+    }
+
+    @LuaFunction
+    public final String aesEncrypt(String data, String keyString) throws LuaException {
+        try {
+            byte[] key = deriveAesKey(keyString);
+            byte[] iv = new byte[16];
+            new SecureRandom().nextBytes(iv);
+
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+            byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+
+            byte[] ivAndCipher = new byte[iv.length + encrypted.length];
+            System.arraycopy(iv, 0, ivAndCipher, 0, iv.length);
+            System.arraycopy(encrypted, 0, ivAndCipher, iv.length, encrypted.length);
+
+            return Base64.getEncoder().encodeToString(ivAndCipher);
+        } catch (Exception e) {
+            throw new LuaException("Failed to AES encrypt: " + e.getMessage());
+        }
+    }
+
+    @LuaFunction
+    public final String aesDecrypt(String base64CipherWithIv, String keyString) throws LuaException {
+        try {
+            byte[] key = deriveAesKey(keyString);
+            byte[] ivAndCipher = Base64.getDecoder().decode(base64CipherWithIv);
+
+            byte[] iv = new byte[16];
+            byte[] cipherBytes = new byte[ivAndCipher.length - 16];
+            System.arraycopy(ivAndCipher, 0, iv, 0, 16);
+            System.arraycopy(ivAndCipher, 16, cipherBytes, 0, cipherBytes.length);
+
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+            cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+            byte[] decrypted = cipher.doFinal(cipherBytes);
+
+            return new String(decrypted, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new LuaException("Failed to AES decrypt: " + e.getMessage());
+        }
+    }
+
+    private static byte[] deriveAesKey(String keyString) throws Exception {
+        MessageDigest sha = MessageDigest.getInstance("SHA-256");
+        byte[] hash = sha.digest(keyString.getBytes(StandardCharsets.UTF_8));
+        byte[] key = new byte[16];
+        System.arraycopy(hash, 0, key, 0, 16);
+        return key;
     }
 
     private static String encrypt(String data, String publicKey) throws Exception {
