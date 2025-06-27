@@ -1,5 +1,6 @@
 package com.beanfeed.cccrypto.apis;
 
+import dan200.computercraft.api.lua.LuaException;
 import dan200.computercraft.api.lua.LuaFunction;
 
 import javax.crypto.Cipher;
@@ -12,11 +13,9 @@ import java.util.Base64;
 public class CryptoMethods {
 
     @LuaFunction
-    public final String rsaEncrypt(String data, String publicKey) {
+    public final String rsaEncrypt(String data, String publicKey) throws LuaException {
         // Implement RSA encryption logic here
         // This is a placeholder implementation
-
-        System.out.println(key);
 
         try {
             return encrypt(data, publicKey);
@@ -26,10 +25,9 @@ public class CryptoMethods {
     }
 
     @LuaFunction
-    public final String rsaDecrypt(String value, String privateKey) {
+    public final String rsaDecrypt(String value, String privateKey) throws LuaException {
         // Implement RSA decryption logic here
         // This is a placeholder implementation
-        System.out.println(key);
 
         try {
             return decrypt(value, privateKey);
@@ -39,34 +37,31 @@ public class CryptoMethods {
     }
 
     @LuaFunction
-    public final String rsaVerify(String data, String publicKey) {
+    public final boolean rsaVerify(String value, String signature, String publicKey) throws LuaException {
         // Implement RSA encryption logic here
         // This is a placeholder implementation
 
-        System.out.println(key);
-
         try {
-            return verify(data, publicKey);
+            return verify(value, signature, publicKey);
         } catch (Exception e) {
             throw new LuaException("Failed to verify signature: " + e.getMessage());
         }
     }
 
     @LuaFunction
-    public final String rsaSign(String value, String privateKey) {
+    public final String rsaSign(String value, String privateKey) throws LuaException {
         // Implement RSA decryption logic here
         // This is a placeholder implementation
-        System.out.println(key);
 
         try {
-            return decrypt(value, privateKey);
+            return sign(value, privateKey);
         } catch (Exception e) {
             throw new LuaException("Failed to sign: " + e.getMessage());
         }
     }
 
     @LuaFunction
-    public final String sha256(String value) {
+    public final String sha256(String value) throws LuaException {
         // Implement SHA-256 hashing logic here
         // This is a placeholder implementation
         try {
@@ -100,7 +95,7 @@ public class CryptoMethods {
     }
 
     private static String sign(String data, String privateKey) throws Exception {
-        Key key = getPrivateKeyFromBase64(base64Key);
+        Key key = getPrivateKeyFromBase64(privateKey);
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, key);
@@ -109,8 +104,8 @@ public class CryptoMethods {
         return Base64.getEncoder().encodeToString(encrypted);
     }
 
-    private static bool verify(String value, String signature, String publicKey) throws Exception {
-        Key key = getPublicKeyFromBase64(base64Key);
+    private static boolean verify(String value, String signature, String publicKey) throws Exception {
+        Key key = getPublicKeyFromBase64(publicKey);
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, key);
