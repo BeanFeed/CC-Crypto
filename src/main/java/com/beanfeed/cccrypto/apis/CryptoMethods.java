@@ -12,29 +12,56 @@ import java.util.Base64;
 public class CryptoMethods {
 
     @LuaFunction
-    public final String rsaEncrypt(String value, String key, String keyType) {
+    public final String rsaEncrypt(String data, String publicKey) {
         // Implement RSA encryption logic here
         // This is a placeholder implementation
 
         System.out.println(key);
 
         try {
-            return encrypt(value, key, keyType);
+            return encrypt(data, publicKey);
         } catch (Exception e) {
-            return "Failed to encrypt: " + e.getMessage();
+            throw new LuaException("Failed to encrypt: " + e.getMessage());
         }
     }
 
     @LuaFunction
-    public final String rsaDecrypt(String value, String key, String keyType) {
+    public final String rsaDecrypt(String value, String privateKey) {
         // Implement RSA decryption logic here
         // This is a placeholder implementation
         System.out.println(key);
 
         try {
-            return decrypt(value, key, keyType);
+            return decrypt(value, privateKey);
         } catch (Exception e) {
-            return "Failed to decrypt: " + e.getMessage();
+            throw new LuaException("Failed to decrypt: " + e.getMessage());
+        }
+    }
+
+    @LuaFunction
+    public final String rsaVerify(String data, String publicKey) {
+        // Implement RSA encryption logic here
+        // This is a placeholder implementation
+
+        System.out.println(key);
+
+        try {
+            return verify(data, publicKey);
+        } catch (Exception e) {
+            throw new LuaException("Failed to verify signature: " + e.getMessage());
+        }
+    }
+
+    @LuaFunction
+    public final String rsaSign(String value, String privateKey) {
+        // Implement RSA decryption logic here
+        // This is a placeholder implementation
+        System.out.println(key);
+
+        try {
+            return decrypt(value, privateKey);
+        } catch (Exception e) {
+            throw new LuaException("Failed to sign: " + e.getMessage());
         }
     }
 
@@ -45,14 +72,12 @@ public class CryptoMethods {
         try {
             return sha(value);
         } catch (Exception e) {
-            return "Failed to sha256: " + e.getMessage();
+            throw new LuaException("Failed to sha256: " + e.getMessage());
         }
     }
 
-    private static String encrypt(String data, String base64Key, String keyType) throws Exception {
-        Key key = (keyType.equals("public"))
-                ? getPublicKeyFromBase64(base64Key)
-                : getPrivateKeyFromBase64(base64Key);
+    private static String encrypt(String data, String publicKey) throws Exception {
+        Key key = getPublicKeyFromBase64(publicKey);
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.ENCRYPT_MODE, key);
@@ -62,18 +87,36 @@ public class CryptoMethods {
     }
 
     /**
-     * Decrypt data using a public or private RSA key.
+     * Decrypt data using a private RSA key.
      */
-    private static String decrypt(String base64Encrypted, String base64Key, String keyType) throws Exception {
-        Key key = (keyType.equals("public"))
-                ? getPublicKeyFromBase64(base64Key)
-                : getPrivateKeyFromBase64(base64Key);
+    private static String decrypt(String value, String privateKey) throws Exception {
+        Key key = getPrivateKeyFromBase64(privateKey);
 
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, key);
 
-        byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(base64Encrypted));
+        byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(value));
         return new String(decrypted, StandardCharsets.UTF_8);
+    }
+
+    private static String sign(String data, String privateKey) throws Exception {
+        Key key = getPrivateKeyFromBase64(base64Key);
+
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+
+        byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(encrypted);
+    }
+
+    private static bool verify(String value, String signature, String publicKey) throws Exception {
+        Key key = getPublicKeyFromBase64(base64Key);
+
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+
+        byte[] decrypted = cipher.doFinal(Base64.getDecoder().decode(signature));
+        return (new String(decrypted, StandardCharsets.UTF_8)).equals(value);
     }
 
     private static String sha(String input) throws Exception {
