@@ -22,7 +22,7 @@ public class CryptoMethods {
         try {
             return encrypt(data, publicKey);
         } catch (Exception e) {
-            throw new LuaException("Failed to encrypt: " + e.getMessage());
+            throw new LuaException("Failed to encrypt");
         }
     }
 
@@ -34,7 +34,7 @@ public class CryptoMethods {
         try {
             return decrypt(value, privateKey);
         } catch (Exception e) {
-            throw new LuaException("Failed to decrypt: " + e.getMessage());
+            throw new LuaException("Failed to decrypt");
         }
     }
 
@@ -46,7 +46,7 @@ public class CryptoMethods {
         try {
             return verify(value, signature, publicKey);
         } catch (Exception e) {
-            throw new LuaException("Failed to verify signature: " + e.getMessage());
+            throw new LuaException("Failed to verify signature");
         }
     }
 
@@ -58,7 +58,7 @@ public class CryptoMethods {
         try {
             return sign(value, privateKey);
         } catch (Exception e) {
-            throw new LuaException("Failed to sign: " + e.getMessage());
+            throw new LuaException("Failed to sign");
         }
     }
 
@@ -69,7 +69,7 @@ public class CryptoMethods {
         try {
             return sha(value);
         } catch (Exception e) {
-            throw new LuaException("Failed to sha256: " + e.getMessage());
+            throw new LuaException("Failed to sha256");
         }
     }
 
@@ -93,7 +93,7 @@ public class CryptoMethods {
 
             return Base64.getEncoder().encodeToString(ivAndCipher);
         } catch (Exception e) {
-            throw new LuaException("Failed to AES encrypt: " + e.getMessage());
+            throw new LuaException("Failed to AES encrypt");
         }
     }
 
@@ -117,8 +117,40 @@ public class CryptoMethods {
 
             return new String(decrypted, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new LuaException("Failed to AES decrypt: " + e.getMessage());
+            throw new LuaException("Failed to AES decrypt");
         }
+    }
+
+    @LuaFunction
+    public final String[] generateRsaKeyPair() throws LuaException {
+        try {
+            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            keyPairGenerator.initialize(2048);
+            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+
+            // Encode keys
+            String publicKeyBase64 = Base64.getEncoder().encodeToString(
+                    keyPair.getPublic().getEncoded());
+            String privateKeyBase64 = Base64.getEncoder().encodeToString(
+                    keyPair.getPrivate().getEncoded());
+
+            // Add PEM headers and footers
+            String pemPublicKey = "-----BEGIN PUBLIC KEY-----\n" +
+                    formatPem(publicKeyBase64) +
+                    "\n-----END PUBLIC KEY-----";
+            String pemPrivateKey = "-----BEGIN PRIVATE KEY-----\n" +
+                    formatPem(privateKeyBase64) +
+                    "\n-----END PRIVATE KEY-----";
+
+            return new String[] { pemPublicKey, pemPrivateKey };
+        } catch (Exception e) {
+            throw new LuaException("Failed to generate RSA key pair: " + e.getMessage());
+        }
+    }
+
+    private String formatPem(String base64) {
+        // Insert newlines every 64 characters for proper PEM format
+        return base64.replaceAll("(.{64})", "$1\n");
     }
 
     private static byte[] deriveAesKey(String keyString) throws Exception {
